@@ -41,4 +41,4 @@ The full report includes:
 ## Author
 **Calum Smith**
 * MSc Statistics with Data Science, University of Warwick
-* [Link to your LinkedIn]](https://www.linkedin.com/in/calumwillsmith/)
+* https://www.linkedin.com/in/calumwillsmith/
