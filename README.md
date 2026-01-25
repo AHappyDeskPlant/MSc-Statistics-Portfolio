@@ -1,7 +1,7 @@
 # MSc Statistics Portfolio - University of Warwick
 
 ## About Me
-I am a Statistics & Data Science MSc student with a background in Mathematics (Manchester) and Finance (Durham). This repository contains my coursework and self-directed projects.
+I am currently a masters student at Warwick University studying for an MSc in Statistics with Data Science. My current interests lie in the intersection of Monte Carlo methods and ML with applications in volatility modelling. I am excited to learn about how I can apply these ideas to solve real-world problems. This repository contains my projects and will be updated over time.
 
 ## Projects
 
