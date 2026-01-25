@@ -1,0 +1,589 @@
+Monte Carlo Methods: Sampling Algorithms
+================
+Calum Smith
+2026-01-25
+
+``` r
+rm(list=ls())
+library(ggplot2)
+library(dplyr)
+
+set.seed(20)
+```
+
+# 1. Inverse Transform Sampling
+
+Let $Y = X^\alpha$ where $\alpha = 2k+1$ for
+$k \in \mathbb{N} \cup \{0\}$.The cumulative distribution function (CDF)
+of $Y$, $F_Y(y)$, is given by: $$\begin{aligned}
+    F_Y(y) &= \mathbb{P}(Y \le y) \\
+    &= \mathbb{P}(X^\alpha \le y) \\
+    &= \mathbb{P}(X \le y^{1/\alpha}) \\
+    &= F_X(y^{1/\alpha})
+\end{aligned}$$ Since $\alpha$ is odd, the function $g(x) = x^\alpha$ is
+strictly increasing and invertible. The CDF of a Laplace random variable
+with $\mu=0$ and $b=1$ if given by $$F_X(x) =
+\begin{cases}
+    \frac{1}{2} e^x & \text{if } x < 0 \\
+    1 - \frac{1}{2} e^{-x} & \text{if } x \geq 0
+\end{cases}$$ From the above we evaluate the Laplace CDF at
+$x=y^{1/\alpha}$ to give the CDF of Y, $$F_Y(y) =
+\begin{cases}
+    \frac{1}{2} e^{y^{1/\alpha}} & \text{if } y < 0 \\
+    1 - \frac{1}{2} e^{-y^{1/\alpha}} & \text{if } y \ge 0
+\end{cases}$$
+
+To obtain the probability density function of $Y$ we use the Fundamental
+Theorem of Calculus which gives the identity
+
+$$\begin{aligned}
+    f_Y(y) &= \frac{d}{dy}F_Y(y) \\
+    &= \begin{cases}
+        \frac{1}{2\alpha} y^{\frac{1}{\alpha} - 1} e^{y^{\frac{1}{\alpha}}} & \text{if } y<0 \\
+        \frac{1}{2\alpha} y^{\frac{1}{\alpha}-1} e^{-y^{\frac{1}{\alpha}}} & \text{if } y\geq 0
+    \end{cases}
+\end{aligned}$$
+
+We can simplify the PDF of $Y$ by considering the cases for $y$ and
+combining them.(i) when $y<0$ we have
+$f_Y(y) = \frac{1}{2\alpha} y^{\frac{1}{\alpha}-1} e^{y^{\frac{1}{\alpha}}}$.
+Since $y$ is negative, $y^{1/\alpha}$ is also negative for odd $\alpha$
+so $|y^{1/\alpha}| = -y^{1/\alpha}$. Hence, $e^{-{|y^{1/\alpha}|}}$ when
+$y>0$ we have
+$f_Y(y) = \frac{1}{2\alpha} y^{\frac{1}{\alpha}-1} e^{-y^{\frac{1}{\alpha}}}$.
+Since $y$ is positive, we know that $y^{1/\alpha}$ for odd $\alpha$ and
+so $|y^{1/\alpha}| = y^{1/\alpha}$. Hence, $e^{-{|y^{1/\alpha}|}}$.
+Combining the above gives,
+
+$$f_Y(y) = \frac{1}{2\alpha} y^{\frac{1}{\alpha} - 1} e^{-{|y^{\frac{1}{\alpha}}|}} \quad \text{for } -\infty < y < \infty$$
+
+To sample from the distribution of $Y$, we can use the inverse transform
+sampling method. Here the CDF of $Y$ is given as
+
+$$\begin{aligned}
+      F_Y(y) =
+      \begin{cases}
+          \frac{1}{2} e^{y^{1/\alpha}} & \text{if } y < 0 \\
+          1 - \frac{1}{2} e^{-y^{1/\alpha}} & \text{if } y \ge 0
+      \end{cases}
+  \end{aligned}$$
+
+First, we need to generate a uniform random variable $U \sim U(0,1)$.
+Then, we set $F_Y(y) = u$ and solve for $y$. This involves finding the
+inverse of the CDF of Y and evaluating it at $u$ for each case. Setting
+$u=F_Y(y)$ and rearranging gives
+
+$$  F_Y^{-1}(u) =
+  \begin{cases}
+      [\ln(2u)]^\alpha & \text{if } 0 < u \le \frac{1}{2} \\
+      [-\ln(2(1-u))]^\alpha & \text{if } \frac{1}{2} < u < 1 
+  \end{cases}$$ where the ranges of $u$ are found by looking at how the
+the CDF changes for $y \in (-\infty, 0)$ and $y\in (0, \infty)$.
+
+## Implementation
+
+The following code implements this inverse CDF method for various values
+of $\alpha$.
+
+``` r
+# Define the Sampling Function
+gicdf.y <- function(u, alpha) {
+  x <- numeric(length(u))
+  ind.neg <- (u <= 0.5)
+  x[ind.neg] <- log(2 * u[ind.neg])
+  x[!ind.neg] <- -log(2 * (1 - u[!ind.neg]))
+  y <- sign(x) * (abs(x))^alpha
+  return(y)
+}
+
+# Generate the Sample Data
+n.samples <- 1000
+alphas <- c(1, 3, 5)
+
+samples <- lapply(alphas, function(a) {
+  u.values <- runif(n.samples)
+  alpha.vec <- rep(a, n.samples)
+  gicdf.y(u.values, alpha.vec)
+})
+```
+
+### Plot of the target distributions
+
+To verify the distribution, we can plot a histogram of the generated
+samples and overlay the theoretical probability density function (PDF)
+derived in part (a).
+
+For $\alpha = 1$, the density of $Y$ is the Laplace distribution as
+described above so we get the characteristic tent shape centred at 0. As
+we increase the value of $\alpha$, the density of $Y$ gets stretched and
+the tails become very heavy. This makes sense because for example, if
+$X=3$ then under the transformation with $\alpha=3$ we have that
+$Y=3^3=27$ and so we are spreading out the density for values of $X$.
+Moreover, the values close to 0 get even closer due to $\alpha$ which
+causes the spike as $\alpha$ increases.
+
+``` r
+# Define the theoretical PDF of Y
+d_Y <- function(y, alpha) {
+  term1 <- 1 / (2 * alpha)
+  term2 <- abs(y)^((1 - alpha) / alpha)
+  term3 <- exp(-abs(y)^(1 / alpha))
+  
+  
+  density <- term1 * term2 * term3
+  density[y == 0 & alpha > 1] <- 0
+  density[y == 0 & alpha == 1] <- 0.5
+  
+  return(density)
+}
+
+plot_data <- mapply(function(s, a) data.frame(y = s, alpha = a),
+                    samples, alphas, SIMPLIFY = FALSE) %>%
+  bind_rows() %>%
+  mutate(alpha_label = factor(paste("alpha =", alpha)))
+
+# Trim the data for better visualisation
+trimmed_plot_data <- plot_data %>%
+  group_by(alpha_label) %>%
+  mutate(q_low = quantile(y, 0.005),
+         q_high = quantile(y, 0.995)) %>%
+  filter(y >= q_low & y <= q_high) %>%
+  ungroup()
+
+# Create the theoretical density data for the lines
+theory_data <- trimmed_plot_data %>%
+  group_by(alpha_label, alpha) %>%
+  summarise(min_y = min(y), max_y = max(y)) %>%
+  group_by(alpha_label, alpha) %>%
+  summarise(y = seq(min_y, max_y, length.out = 501)) %>%
+  mutate(pdf = d_Y(y, alpha)) %>%
+  ungroup()
+
+# Generate the plot
+ggplot(trimmed_plot_data, aes(x = y)) +
+  
+  # Histogram of the samples
+  geom_histogram(aes(y = after_stat(density)), 
+                 bins = 100, 
+                 fill = "#0072B2", 
+                 alpha = 0.6,
+                 color = "white",
+                 linewidth = 0.2) +
+  
+  # Theoretical density line
+  geom_line(data = theory_data, 
+            aes(x = y, y = pdf), 
+            color = "#D55E00", 
+            linewidth = 1.2) +
+  
+  facet_wrap(~ alpha_label, scales = "free") +
+  
+  labs(
+    title = "Sample Histograms vs. Theoretical Density of Y",
+    subtitle = "Samples (blue) and Theoretical PDF (orange)",
+    x = "Y",
+    y = "Density"
+  ) +
+  theme_bw(base_size = 14) +
+  theme(
+    strip.background = element_rect(fill = "grey90"),
+    strip.text = element_text(face = "bold")
+  )
+```
+
+![](Monte_Carlo_Methods_Sampling_Algorithms_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+# 2. Optimization of Rejection Sampling
+
+For a distribution with PDF $q(x)$ to be a valid proposal distribution
+for the target distribution with PDF $p(x)$, there must exist a finite
+constant $M$ such that the ratio $p(x)/q(x)$ is bounded for all $x$:
+$$\frac{p(x)}{q(x)} \le M \quad \text{for all } x \in (-\infty,\infty)$$
+Where our target is
+$p(x) = \frac{1}{2\alpha}x^{\frac{1}{\alpha}-1} e^{-{|x^{\frac{1}{\alpha}}|}}$
+and the proposal $q(x)$ is the $t$-distribution given in the question.
+In order to analyse the behaviour of the densities we need to write them
+both with respect to $x$. To determine the value of $\alpha$ we need to
+examine the behaviour of ratio of the densities at:$x \to 0$ since this
+is the value at which we get the mode for both densities$x \to \infty$
+to check how the tails behaveChecking each limit in turn we get:
+$$\lim_{x \to 0} \frac{p(x)}{q(x)} = \lim_{x \to 0} \frac{\frac{1}{2\alpha}x^{\frac{1}{\alpha}-1} e^{-{|x^{\frac{1}{\alpha}}|}}}{q(x)}$$
+We know that the $t$-distribution with $\nu$ degrees of freedom has a
+finite constant mode for any $\nu \in (0, \infty)$ so we can write
+$\lim_{x\to 0}q(x)=C$ for some $C>0$. Now, we have that the limit
+reduces to
+$$\lim_{x \to 0} \frac{p(x)}{q(x)} = \frac{1}{2\alpha C} \lim_{x\to 0} x^{\frac{1}{\alpha} - 1}$$
+So the limit of the ratio depends on the sign of $\frac{1}{\alpha} - 1$.
+Now we consider two cases:$\alpha=1$: In this case the limit reduces to
+$1/2C$ which is a finite positive constant. For the case when
+$x \to \infty$, the ratio goes to 0 because the exponential tail of
+$p(x)$ decays faster that the polynomial tail of $q(x)$. Since the ratio
+is a continuous function that is finite at $x=0$ and tends to 0 at
+infinity, it is bounded over its entire domain. Hence, a
+$t$-distribution is a valid proposal for $\alpha=1$.$\alpha > 1$: In
+this case, $\frac{1}{\alpha} - 1 < 0$. This means
+that$$\frac{1}{2\alpha C} \lim_{x\to 0} x^{\frac{1}{\alpha} - 1} = \infty$$so
+the ratio is unbounded. This means we cannot find a finite $M$ to
+satisfy the condition above for all $x$ close to 0. Hence, a
+$t$-distribution would not be a valid proposal for $\alpha > 1$.Hence,
+for rejection sampling to work we need to choose $\alpha=1$.
+
+To maximise the efficiency of the rejection sampler we need to minimise
+the constant $M$ where $M = \sup_x \frac{f(x)}{g(x)}$. Since $M$ will
+depend on the parameter $\nu$ of our proposal $g(x)$, we are looking for
+the value $\nu^*$ that minimises $M(\nu)$. To find the maximum of this
+ratio we differentiate with respect to $x$ and set to 0. Once we do
+this, we find that the critical values are at $x=1$ and $x=\nu$. Hence,
+
+$$\begin{align*}
+            M(\nu) = \frac{\sqrt{\nu \pi}\Gamma(\frac{\nu}{2})}{2\Gamma(\frac{\nu + 1}{2})} \max(1, e^{-\nu}(1+\nu)^{(\nu +1)/2}
+        \end{align*}$$
+
+Then to find $\nu$ we need to numerically calculate it using R. After
+doing this we find that $\nu \approx 3.92$ minimises $M(\nu)$. The below
+figure shows the relationship between the size of $\nu$ and the
+rejection sampling constant $M$.
+
+``` r
+# Find optimal nu
+get_M <- function(nu) {
+  log_C_nu <- (0.5 * log(nu * pi) + 
+                 lgamma(nu / 2) - 
+                 log(2) - 
+                 lgamma((nu + 1) / 2))
+  C_nu <- exp(log_C_nu)
+  h_at_0 <- 1.0
+  log_h_at_1 <- -1.0 + ((nu + 1) / 2) * log(1 + 1/nu)
+  h_at_1 <- exp(log_h_at_1)
+  log_h_at_nu <- -nu + ((nu + 1) / 2) * log(1 + nu)
+  h_at_nu <- exp(log_h_at_nu)
+  sup_h <- max(h_at_0, h_at_1, h_at_nu)
+  
+  return(C_nu * sup_h)
+}
+
+# Find the optimal nu
+opt_result <- optimize(get_M, interval = c(1, 10))
+nu_optimal <- opt_result$minimum
+M_optimal <- opt_result$objective
+
+# Generate data for plotting
+nu_values <- seq(1, 10, by = 0.05)
+M_values <- sapply(nu_values, get_M)
+
+# Plot
+plot(nu_values, M_values, 
+     type = "l", 
+     col = "blue", 
+     lwd = 2,
+     main = "Effect of nu on the Rejection Sampling Constant M",
+     xlab = "Degrees of Freedom",
+     ylab = "Sampling Constant M",
+     panel.first = grid()
+)
+
+points(nu_optimal, M_optimal, col = "red", pch = 19, cex = 1.5)
+
+text(nu_optimal, M_optimal, 
+     label = sprintf("Optimal nu = %.2f\nM = %.4f", nu_optimal, M_optimal),
+     pos = 3,
+     col = "red",
+     cex = 0.9)
+```
+
+![](Monte_Carlo_Methods_Sampling_Algorithms_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+### Implemeting the rejection sampler for the optimal nu
+
+``` r
+# Define varphi
+phi_laplace <- function(x) {
+  return(0.5 * exp(-abs(x)))
+}
+
+# Implement the Rejection Sampler
+
+run_rejection_sampler <- function(n_samples, nu) {
+  M <- get_M(nu)
+  samples <- numeric(n_samples)
+  n_accepted <- 0
+  n_proposed <- 0
+  while (n_accepted < n_samples) {
+    n_proposed <- n_proposed + 1
+    z <- rt(1, df = nu)
+    u <- runif(1)
+    g_z <- dt(z, df = nu)
+    if (g_z > 0) {
+      acceptance_ratio <- phi_laplace(z) / (M * g_z)
+      if (u <= acceptance_ratio) {
+        n_accepted <- n_accepted + 1
+        samples[n_accepted] <- z
+      }
+    }
+  }
+  
+  experimental_rate <- n_samples / n_proposed
+  return(list(
+    samples = samples,
+    experimental_rate = experimental_rate,
+    theoretical_rate = 1.0 / M,
+    M = M,
+    n_proposed = n_proposed,
+    nu_used = nu
+  ))
+}
+
+N_SAMPLES <- 10000
+nu_optimal <- 3.92
+
+# Run the sampler
+res <- run_rejection_sampler(N_SAMPLES, nu_optimal)
+
+# Compare the theoretical and experimental rates
+cat(sprintf("  Target samples: %d\n", N_SAMPLES))
+```
+
+    ##   Target samples: 10000
+
+``` r
+cat(sprintf("  Total proposals needed: %d\n", res$n_proposed))
+```
+
+    ##   Total proposals needed: 13378
+
+``` r
+cat(sprintf("  Theoretical M: %.4f\n", res$M))
+```
+
+    ##   Theoretical M: 1.3350
+
+``` r
+cat(sprintf("  Theoretical Rate (1/M): %.4f\n", res$theoretical_rate))
+```
+
+    ##   Theoretical Rate (1/M): 0.7491
+
+``` r
+cat(sprintf("  Experimental Rate: %.4f\n", res$experimental_rate))
+```
+
+    ##   Experimental Rate: 0.7475
+
+The theoretical acceptance rate is $1/M$ which is this rejection sampler
+was 0.7491 and the experimental acceptance rate was 0.7396 which
+suggests the proposal for $\nu \approx 3.92$ works well.
+
+### Rejection Sampling vs Importance Sampling
+
+For rejection sampling to work, we must find a finite constant $M$ as
+described in question 1. Let $f(x)$ be the target density and let $g(x)$
+be the proposal density. We have
+
+$$f(x) = C_1(1+\frac{t^2}{2})^{-3/2} \quad \text{for } C_1=\frac{\Gamma(3/2)}{\sqrt{2\pi}\Gamma(1)}$$
+and
+$$g(x) = C_2e^{-x^2/2} \quad \text{for } C_2 = \frac{1}{\sqrt{2\pi}}$$
+We can re-write the ratio as
+$$\frac{C_1}{C_2}\lim_{x\to \infty} \frac{e^{x^2/2}}{(1+\frac{x^2}{2})^{3/2}}$$
+If we examine the ratio as $x \to \infty$ we can see that the numerator
+grows exponentially fast whereas the denominator only grows polynomially
+fast. This means the ratio is dominated by the numerator as
+$x \to \infty$ and hence, the limit is $\infty$. Since the ratio is
+unbounded, there is no finite $M$ and so we cannot use the standard
+normal as a proposal distribution in the rejection sampling method.
+
+An importance sampling algorithm can be constructed to estimate the
+expectation of a function $\varphi(T)$, where $T \sim f_T(\cdot;2)$
+using a proposal $g(t)$ which is the density of a $N(0,1)$ random
+variable. The fundamental principle of importance sampling is based on
+the identity: $$\begin{align*}
+        \mathbb{E}_f[\varphi(T)] = \int \varphi(t)\frac{f_T(t)}{g(t)}g(t)dt = \mathbb{E}_g[\varphi(T)w(T)]
+    \end{align*}$$ where the importance weights are defined as
+$w(T)=\frac{f_T(t)}{g(t)}$.
+
+The proposal density of $N(0,1)$ is generally not recommended as a
+proposal because this will result in an estimator with infinite
+variance.
+
+For an importance sampling estimate to be reliable the variance must be
+finite and so we want to see how the variance of the weights behaves for
+this proposal. We know that the weights are finite if and only if
+$\mathbb{E}_g(w(T)^2)$ is finite and so we want to analyse how the tail
+behaves as $|t|\to \infty$. For the $f_T(t;2)$ the density decays
+polynomially, $f_T(t;2) \propto (1+t^2/2)^{-3/2} \propto |t|^{-3}$. For
+the proposal, the density of the standard normal distribution is
+proportional to $g(t) \propto e^{-{t^2/2}}$. The integrand
+$f_T(t)^2/g(t)$ behaves like $e^{t^2}/|t|^6$ which diverges to infinity
+as $|t| \to \infty$ and so $\mathbb{E}_g(w(T)^2)$ is infinite. This
+means that the proposal distribution of $N(0,1)$ is generally not
+recommended because the tails are lighter than the distribution we want
+to sample from.
+
+The below code plots the histograms of the two sampling methods.
+
+``` r
+# Implementing an Importance Sampler
+
+# Define phi
+phi <- function(t) {
+  exp(-t^4)
+}
+
+# Importance sampling function
+is.estimator <- function(n=1000) {
+  t.g <- rnorm(n)
+  W <- dt(t.g, df=2) / dnorm(t.g)
+  return(mean(phi(t.g)* W))
+}
+
+# Simple Monte Carlo sampler
+smc.estimator <- function(n=1000) {
+  t.f <- rt(n, df=2)
+  return(mean(phi(t.f)))
+}
+
+# Run the IS estimator multiple times
+is.replicate <- function(reps=5000, n=1000){
+  estimates <- sapply(1:reps, function(i) is.estimator(n))
+  return(estimates)
+}
+
+# Run SMC estimator multiple times
+smc.replicate <- function(reps=5000, n=1000) {
+  estimates <- sapply(1:reps, function(i) smc.estimator(n))
+  return(estimates)
+}
+
+# Generate samples
+is.results <- is.replicate(reps=1000)
+smc.results <- smc.replicate(reps=1000)
+
+# Calculate the mean and variance
+mean.is <- mean(is.results)
+mean.smc <- mean(smc.results)
+var.is <- var(is.results)
+var.smc <- var(smc.results)
+
+# Print the results
+print(paste("Average IS Estimate:", round(mean.is, 5)))
+```
+
+    ## [1] "Average IS Estimate: 0.52653"
+
+``` r
+print(paste("Average SMC Estimate:", round(mean.smc, 5)))
+```
+
+    ## [1] "Average SMC Estimate: 0.527"
+
+``` r
+print(paste("Variance of IS Estimates:", format(var.is, scientific=TRUE, digits=5)))
+```
+
+    ## [1] "Variance of IS Estimates: 1.2518e-04"
+
+``` r
+print(paste("Variance of SMC Estimates:", format(var.smc, scientific=TRUE, digits=5)))
+```
+
+    ## [1] "Variance of SMC Estimates: 1.8229e-04"
+
+``` r
+# Plot the histograms
+x.limits <- range(c(is.results, smc.results))
+
+par(mfrow=c(1,2))
+
+hist(smc.results, breaks=40, main="Simple Monte Carlo Estimates",
+     xlab="Estimate Value", xlim=x.limits, col="salmon")
+abline(v=mean.smc, col="red", lwd=2)
+
+hist(is.results, breaks=40, main="Importance Sampling Estimates",
+     xlab="Estimate Value", xlim=x.limits, col="salmon")
+abline(v=mean.is, col="blue", lwd=2)
+```
+
+![](Monte_Carlo_Methods_Sampling_Algorithms_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+We can see the histograms for the estimates for SMC and IS. The means
+for the SMC estimates and IS estimates are 0.5263 and 0.5271,
+respectively. The variances are 0.0001249 and 0.0001843, respectively.
+This result is surprising but is explained in the next part.
+
+``` r
+# Set Parameters
+N_max <- 1000
+R <- 100       
+
+# Create Matrices to Store Results
+smc_runs_matrix <- matrix(nrow = R, ncol = N_max)
+is_runs_matrix <- matrix(nrow = R, ncol = N_max)
+
+# Run Replications
+for (i in 1:R) {
+  # SMC Run
+  t.f <- rt(N_max, df = 2)
+  phi_vals_smc <- phi(t.f)
+  smc_runs_matrix[i, ] <- cumsum(phi_vals_smc) / (1:N_max)
+  
+  # IS Run
+  t.g <- rnorm(N_max)
+  W <- dt(t.g, df = 2) / dnorm(t.g)
+  phi_vals_is <- phi(t.g) * W
+  is_runs_matrix[i, ] <- cumsum(phi_vals_is) / (1:N_max)
+}
+
+# Calculate Plotting Bands
+smc_mean_line <- smc_runs_matrix[1, ]
+smc_min_band <- apply(smc_runs_matrix, 2, min, na.rm=TRUE)
+smc_max_band <- apply(smc_runs_matrix, 2, max, na.rm=TRUE)
+
+is_mean_line <- is_runs_matrix[1, ]
+is_min_band <- apply(is_runs_matrix, 2, min, na.rm=TRUE)
+is_max_band <- apply(is_runs_matrix, 2, max, na.rm=TRUE)
+
+iterations <- 1:N_max
+
+# Plotting
+par(mfrow = c(1, 2))
+
+# Plot 1: SMC
+smc_ylim <- range(c(smc_min_band, smc_max_band), na.rm = TRUE, finite = TRUE)
+plot(iterations, smc_mean_line, type = "n", ylim = smc_ylim,
+     main = "SMC (Sampling from t_2)", xlab = "Iteration (n)", ylab = "Estimate")
+polygon(c(iterations, rev(iterations)), c(smc_min_band, rev(smc_max_band)),
+        col = "grey80", border = NA)
+lines(iterations, smc_mean_line, col = "black", lwd = 1)
+
+# Plot 2: IS
+is_ylim_clipped <- range(c(quantile(is_min_band, 0.05, na.rm = TRUE), 
+                           quantile(is_max_band, 0.95, na.rm = TRUE),
+                           smc_ylim), na.rm=TRUE, finite=TRUE)
+plot(iterations, is_mean_line, type = "n", ylim = is_ylim_clipped,
+     main = "IS (using N(0,1) proposal)", xlab = "Iteration (n)", ylab = "Estimate")
+polygon(c(iterations, rev(iterations)), c(is_min_band, rev(is_max_band)),
+        col = "grey80", border = NA)
+lines(iterations, is_mean_line, col = "black", lwd = 1)
+```
+
+![](Monte_Carlo_Methods_Sampling_Algorithms_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+Here the importance sampler (IS) estimator is actually performing better
+than the simple Monte Carlo (SMC) estimator with respect to variance
+which is initially unexpected. However, the choice of $\varphi$ above is
+crucial because this function has extremely light tails and decays to 0
+faster than the standard normal density. This means that $\varphi$
+dominates the integrand, forcing the integral to converge to a small,
+finite value. This effectively down-weights the problematic tail regions
+which tames the exploding weights. This means that choosing a poor
+proposal can be compensated by a clever choice of $\varphi$.
+
+If $\varphi(t) = \exp{(|t|^{1/4})}$ then we completely change how the
+variance of the IS estimator behaves. The new function of $\varphi$
+grows slowly as $|t|$ increases and unlike in part (c), does not decay
+faster than the standard normal density. This means we will not be able
+to control the importance weights when we sample from the tails of
+$N(0,1)$ causing them to explode. This will then lead to an IS estimator
+with infinite variance making it a useless estimator. Whereas, the SMC
+estimator would remain stable and well-behaved as the integral defining
+the variance would still be finite. Therefore, the SMC method would be
+the only reliable approach for this new function.
