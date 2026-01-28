@@ -62,7 +62,7 @@ To replicate the analysis:
     rmarkdown::render("week_3/reports/week_3_activity_3.Rmd", params = list(data_version = "v2", group_var="region"))
 
     # Example: Render the report using Data Version 3
-    rmarkdown::render("week_3/reports/week_3_activity_3.Rmd", params = list(data_version = "v3", group_var="region")))
+    rmarkdown::render("week_3/reports/week_3_activity_3.Rmd", params = list(data_version = "v3", group_var="region"))
     ```
 
 ## 5. Expected Outputs
