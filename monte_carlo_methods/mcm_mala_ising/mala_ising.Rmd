@@ -209,9 +209,9 @@ ggplot(results_mala, aes(x=l, y=acc.rate, color=as.factor(p))) +
        x = "Scaling (l)", y = "Acceptance Rate", color = "Dimension (p)") +
   theme_minimal()
 ```
-The first graph illustrates the efficiency of the chain via the MSJD. When $l$ is low, the MSJD is also low because the chain moves too slowly. When $l$ is large the MSJD is low because the chain gets 'stuck' due to high rejection rates. For MALA, there is a steep decline in MSJD after the optimum $l$ because the gradient term can push the chain so far into the tails that the drift term in the next step becomes really large leading to repeated rejections. This is also reflected in the second graph of accetance rate, with a sharp decline after the optimum $l \approx 1.7$.
+The first graph illustrates the efficiency of the chain via the MSJD. When $l$ is low, the MSJD is also low because the chain moves too slowly. When $l$ is large the MSJD is low because the chain gets 'stuck' due to high rejection rates. For MALA, there is a steep decline in MSJD after the optimum $l$ because the gradient term can push the chain so far into the tails that the drift term in the next step becomes really large leading to repeated rejections. This is also reflected in the second graph of acceptance rate, with a sharp decline after the optimum $l \approx 1.7$.
 
-For MALA we can see that the MSJD is almost 30 times larger than that of the RWMH in higher dimensions, here for $p=100$, which means that MALA is mixing a lot faster than RWMH. This demonstrates that MALA explores the space much more efficiently because the gradient information points the chain towards regions of high probability density, reducing the likelihood of proposing states in the tails. This demonstrates the duperiority of MALA in higher dimensions. A summary of the results are below. It is worth noting that the observed optimal scales vary slightly from theory due to the discrete grid of parameter values tested and noise.
+For MALA we can see that the MSJD is almost 30 times larger than that of the RWMH in higher dimensions, here for $p=100$, which means that MALA is mixing a lot faster than RWMH. This demonstrates that MALA explores the space much more efficiently because the gradient information points the chain towards regions of high probability density, reducing the likelihood of proposing states in the tails. This demonstrates the superiority of MALA in higher dimensions. A summary of the results are below. It is worth noting that the observed optimal scales vary slightly from theory due to the discrete grid of parameter values tested and noise.
 
 ```{r, summary of RWMH vs MALA}
 results$Algorithm <- "RWMH"
@@ -341,7 +341,7 @@ for (J in J.vals) {
 }
 par(mfrow=c(1,1))
 ```
-From the ACF plots above we can see that for $J=0.05$ the ACF drops almost immediately to 0 indicating rapid mixing. For $J=0.5$, the chains initialised at "All +1" and "All -1" exibit strong autocorrelation that decays very slowly indicating that the chain is 'sticky'. Finally, for $J=0.5$, the ACF plots are mostly empty for "All +1" and "All -1" confirming that the chain is stuck in their initial states and have not converged to the stationary distribution at all.
+From the ACF plots above we can see that for $J=0.05$ the ACF drops almost immediately to 0 indicating rapid mixing. For $J=0.5$, the chains initialised at "All +1" and "All -1" exhibit strong autocorrelation that decays very slowly indicating that the chain is 'sticky'. Finally, for $J=0.5$, the ACF plots are mostly empty for "All +1" and "All -1" confirming that the chain is stuck in their initial states and have not converged to the stationary distribution at all.
 
 
 
