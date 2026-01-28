@@ -5,6 +5,9 @@ date: "2026-01-26"
 output: html_document
 params:
   data_version: "v1"
+  group_var: "region"
+  target_var: "tenure_months"
+  hist_var: "monthly_fee_gbp"
 ---
 
 ```{r, warning = FALSE, message = FALSE}
@@ -18,8 +21,6 @@ library(dplyr)
 library(gt)
 library(janitor)
 library(here)
-library(shiny)
-
 ```
 
 ## Load & Clean the data
@@ -67,7 +68,7 @@ dynamic_labels <- setNames(
 Create the Table 1 from the inputted dataset
 ```{r}
 # Column variables
-group_var <- 'region'
+group_var <- params$group_var
 
 # Building the table 1
 table1 <- df_clean %>%
@@ -114,7 +115,7 @@ table1_formatted
 
 Create a box-plot and a histogram of the inputted data. 
 ```{r}
-target_var <- "tenure_months"
+target_var <- params$target_var
 
 boxplot_p <- ggplot(df_clean, aes(x = .data[[group_var]],
                                   y = .data[[target_var]],
@@ -138,7 +139,7 @@ ggsave(here::here("week_3", "outputs", "figures",
 ```
 
 ```{r}
-hist_var <- "monthly_fee_gbp"
+hist_var <- params$hist_var
 dynamic_bins <- ceiling(sqrt(nrow(df_clean)))
 
 histogram_p <- ggplot(df_clean, aes(x = .data[[hist_var]])) +

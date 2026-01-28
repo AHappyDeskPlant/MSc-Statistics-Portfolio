@@ -1,10 +1,3 @@
-Project summary in plain English.
-Data description: what a row represents and outcome/group variable.
-Exact run steps as ordered commands.
-Dependencies: renv and how to restore.
-Expected outputs including file names, folders and output policy.
-Assumptions/limitations include date/contact.
-
 # Week 3 Activity 3: Subscription Data Analysis
 
 ## 1. Project Summary
@@ -40,6 +33,7 @@ This project uses `renv` for dependency management to ensure the analysis is rep
 To replicate the analysis:
 
 1.  **Verify Directory Structure:** Ensure your project has the following structure relative to the project root:
+    ```
     week_3
     ├── data
     │   ├── processed
@@ -66,7 +60,7 @@ To replicate the analysis:
     │   ├── week_3_activity_3.html
     │   └── week_3_activity_3.Rmd
     └── src
-
+    ```
 
 2.  **Execute via R Console:**
     You can generate the HTML report and outputs for a specific dataset version by running the `rmarkdown::render` command in your RStudio Console. 
@@ -87,12 +81,11 @@ Upon successful execution, the following files will be generated in the `week_3/
 * **Tables:**
     * `tables/table_1_v1.html`: A formatted HTML summary table showing statistics by Region.
 * **Figures:**
-    * `figures/boxplot_v1.png`: A boxplot of Tenure Months by Region.
+    * `figures/boxplot_v1.png`: A box-plot of Tenure Months by Region.
     * `figures/histogram_v1.png`: A histogram of Monthly Fees with dynamically calculated bins.
 
 *(Note: Filenames will change based on the `data_version` selected in the code).*
 
 ## 6. Assumptions and Limitations
 * **Assumptions:** The script assumes the raw data follows the naming convention `st422_week3_subscription_{version}.csv` and contains consistent column names across versions. It utilizes the `here` package, assuming the `.Rproj` file is at the root directory.
-* **Limitations:** The `data_version` is currently hard-coded in the RMarkdown file; running the analysis for all three versions requires manually changing the variable and re-running the script three times.
-* **Contact:** Calum Smith (January 2026).
+* **Limitations** The script only 
