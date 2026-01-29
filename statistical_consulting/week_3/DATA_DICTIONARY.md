@@ -4,7 +4,10 @@
 
 
 **Dataset Name:** st422_week3_subscription_*.csv
+
 **Description:** Dataset containing customer demographics, subscription details, marketing info, and revenue metrics.
+
+*Note: Version `v3` includes 5 additional variables regarding marketing and revenue that are not present in v1 or v2.*
 
 | Variable Name | Data Type | Description |
 | :--- | :--- | :--- |
