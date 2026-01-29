@@ -88,4 +88,4 @@ Upon successful execution, the following files will be generated in the `week_3/
 
 ## 6. Assumptions and Limitations
 * **Assumptions:** The script assumes the raw data follows the naming convention `st422_week3_subscription_{version}.csv` and contains consistent column names across versions. It utilizes the `here` package, assuming the `.Rproj` file is at the root directory.
-* **Limitations** It looks at the relationship between the group (e.g., Region) and the target (e.g., Tenure) in isolation. It does not account for other variables that might explain the difference (e.g., if one region has a higher average `monthly_fee_gbp` which actually drives the tenure difference).
+* **Limitations** It looks at the relationship between the group (e.g., `region`) and the target (e.g., `tenure_months`) in isolation. It does not account for other variables that might explain the difference (e.g., if one region has a higher average `monthly_fee_gbp` which actually drives the tenure difference).
