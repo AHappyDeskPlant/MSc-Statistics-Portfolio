@@ -76,15 +76,21 @@ To replicate the analysis:
     ```
 
 ## 5. Expected Outputs
-Upon successful execution, the following files will be generated in the `week_3/outputs/` folder:
+Upon successful execution, the following files will be generated in the `week_3/outputs/` where each file will be names according to the version of the data being used:
 
 * **Tables:**
     * `tables/table_1_v1.html`: A formatted HTML summary table showing statistics by Region.
+    * `tables/table_1_v2.html`: A formatted HTML summary table showing statistics by Region.
+    * `tables/table_1_v3.html`: A formatted HTML summary table showing statistics by Region.
 * **Figures:**
     * `figures/boxplot_v1.png`: A box-plot of Tenure Months by Region.
+    * `figures/boxplot_v2.png`: A box-plot of Tenure Months by Region.
+    * `figures/boxplot_v3.png`: A box-plot of Tenure Months by Region.
     * `figures/histogram_v1.png`: A histogram of Monthly Fees with dynamically calculated bins.
+    * `figures/histogram_v2.png`: A histogram of Monthly Fees with dynamically calculated bins.
+    * `figures/histogram_v3.png`: A histogram of Monthly Fees with dynamically calculated bins.
 
-*(Note: Filenames will change based on the `data_version` selected in the code).*
+*(Note: Filenames will change based on the `data_version` selected in the code, the above is an example if all three versions are ran).*
 
 ## 6. Assumptions and Limitations
 * **Assumptions:** The script assumes the raw data follows the naming convention `st422_week3_subscription_{version}.csv` and contains consistent column names across versions. It utilizes the `here` package, assuming the `.Rproj` file is at the root directory.
