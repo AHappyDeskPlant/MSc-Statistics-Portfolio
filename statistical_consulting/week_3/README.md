@@ -53,7 +53,7 @@ To replicate the analysis:
    └── src
    ```
 2.  **Execute via R Console:**
-    You can generate the HTML report and outputs for a specific dataset version by running the `rmarkdown::render` command in your RStudio Console. Below are exmaple use cases for each version of the data. Please note that you can change the following parameters in the YAML header in the top of the report `.Rmd` file to suit your own preferences.
+You can generate the HTML report and outputs for a specific dataset version by running the `rmarkdown::render` command in your RStudio Console. Below are exmaple use cases for each version of the data. Please note that you can change the following parameters in the YAML header in the top of the report `.Rmd` file to suit your own preferences.
     
     *Make sure to change the `data_version` parameter as needed ("v1", "v2", or "v3"):*
     ```r
