@@ -67,10 +67,12 @@ You can generate the HTML report and outputs for a specific dataset version by r
     ```r
     # Example: Render the report using Data Version 1
     rmarkdown::render("week_3/reports/week_3_activity_3.Rmd", params = list(data_version = "v1", group_var="region"))
-    
+    ```
+    ```r
     # Example: Render the report using Data Version 2
     rmarkdown::render("week_3/reports/week_3_activity_3.Rmd", params = list(data_version = "v2", group_var="region"))
-
+    ```
+    ```r
     # Example: Render the report using Data Version 3
     rmarkdown::render("week_3/reports/week_3_activity_3.Rmd", params = list(data_version = "v3", group_var="region"))
     ```
