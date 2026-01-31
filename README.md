@@ -14,6 +14,10 @@ I am currently a masters student at Warwick University studying for an MSc in St
 * **Focus:** Statistical Analysis, Reproducibility
 * **Dependencies:** R, R Markdown, LaTeX.
 
-### 📂 [3. Bayesian Forecasting](bayesian_forecasting)
+### 📂 [3. Bayesian Forecasting](bayesian_forecasting/)
 * **Focus** Dynamic Linear Models, Kalman Filters
+* **Dependencies:** Python, R
+
+### 📂 [4. Time Series](time_series/)
+* **Focus** AR, MA, ARMA, State-Space Models
 * **Dependencies:** Python, R
