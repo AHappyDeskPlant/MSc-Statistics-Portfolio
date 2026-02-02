@@ -1,0 +1,60 @@
+---
+title: 'Week 4: Activity 1'
+author: "Calum Smith"
+date: "2026-02-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning = FALSE, message = FALSE}
+library(ggplot2)
+library(gtsummary)
+library(dplyr)
+library(gt)
+library(janitor)
+library(here)
+```
+
+```{r}
+# create file path to data selected
+data_path <- here("week_4", "data", "raw", "week4_dataset.csv")
+
+# Load the data
+df <- read.csv(data_path)
+```
+
+```{r}
+# Next we need to clean the data across the three sources
+df_clean <- df %>%
+  mutate(across(where(is.character), as.factor)) %>%  # Ensure strings are factors
+  janitor::clean_names()
+```
+
+```{r}
+# A function to turn "tenure_months" into "Tenure Months"
+correct_labels <- function(x) {
+  x %>%
+    stringr::str_replace_all("_", " ") %>%
+    stringr::str_to_title() %>%
+    stringr::str_replace("Gbp", "(£)") %>%
+    stringr::str_replace("90d", "(90 Days)") %>%
+    stringr::str_replace("3m", "(90 Days)")
+}
+
+# Apply this to all current column names in the dataset
+dynamic_labels <- setNames(
+  as.list(correct_labels(names(df_clean))), 
+  names(df_clean)
+)
+```
+
+
+
+
+
+
+
+
