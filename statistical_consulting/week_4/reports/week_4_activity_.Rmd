@@ -3,10 +3,13 @@ title: 'Week 4: Activity 1'
 author: "Calum Smith"
 date: "2026-02-02"
 output: html_document
+#params:
+  #data_version: "updated"
+  #group_var: "group"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r, warning = FALSE, message = FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r, warning = FALSE, message = FALSE}
@@ -16,14 +19,59 @@ library(dplyr)
 library(gt)
 library(janitor)
 library(here)
+library(readr)
+library(tidyverse)
 ```
+
+# Introduction
+This report provides an initial, plain-language assessment of whether your dataset supports a clear and defensible message that could be communicated to a general audience. At this stage we focus on describing what the data show and how confident we can be in that description, rather than applying complex models. In particular, we (i) summarise who is in the dataset, (ii) compare the two groups on the information available, and (iii) highlight any issues that could make a public-facing narrative misleading without further checks.
+
+# Client Brief
+You asked us to assess whether the dataset supports a clear message that you can stand behind publicly. In practical terms, you want to know whether the pattern is relevant to your decisions, consistent enough to tell a clear story, and not easily explained by straightforward problems such as the two groups being very different people, missing information, or changes in how the outcome was defined or recorded.
+
+# Data Description
+
+
+# Baseline summary of data characteristics
+
+# Claim
+
+# Data and approach(plain language)
+
+# Evidence
+
 
 ```{r}
 # create file path to data selected
-data_path <- here("week_4", "data", "raw", "week4_dataset.csv")
+#data_version <- params$data_version
+data_version <-  "updated"
 
-# Load the data
-df <- read.csv(data_path)
+data_path <- here("week_4", "data", "raw", paste0("week4_dataset_",
+                                                  data_version, ".csv"))
+
+load_dynamic_data <- function(file_path) {
+  
+  # Read the first line
+  first_line <- readLines(file_path, n = 1)
+  
+  # Count Semicolons vs Commas
+  cnt_semi <- length(gregexpr(";", first_line)[[1]])
+  cnt_comma <- length(gregexpr(",", first_line)[[1]])
+  
+  # Choose the correct Tidyverse function
+  if (cnt_semi > cnt_comma) {
+    message("Detected Semicolon separator. Using read_delim(delim = ';')...")
+    df <- read_delim(file_path, delim = ";", show_col_types = FALSE)
+  } else {
+    message("Detected Comma separator. Using read_csv()...")
+    df <- read_csv(file_path, show_col_types = FALSE)
+  }
+  
+  return(df)
+}
+
+df <- load_dynamic_data(data_path)
+
 ```
 
 ```{r}
@@ -51,10 +99,103 @@ dynamic_labels <- setNames(
 )
 ```
 
+```{r}
+# Column variables
+#group_var <- params$group_var
+group_var <- "group"
 
+# Building the table 1
+table1 <- df_clean %>%
+  select(
+    all_of(group_var),
+    where(is.numeric),
+    where(is.factor),
+    -any_of(c("customer_id", "signup_date"))
+  ) %>%
+  tbl_summary(
+    by = all_of(group_var),
+    label = dynamic_labels,
+    statistic = list(
+      all_continuous() ~ "{median} ({p25}, {p75})",
+      all_categorical() ~ "{n} ({p}%)"
+    ),
+    missing = "ifany",
+    missing_text = "(Missing)",
+    missing_stat = "{N_miss} ({p_miss}%)"
+  ) %>%
+  add_overall(last = FALSE) %>%
+  add_n() %>%
+  add_stat_label(location = "row") %>%
+  modify_header(label ~ "**Variable**") %>%
+  modify_caption(paste("**Table 1. Characteristics by", 
+                       tools::toTitleCase(group_var), 
+                       "(Data Version:", data_version, ")**"))
 
+# Output the Table 1
+table1_formatted <- table1 %>% 
+  as_gt() %>%
+  gt::tab_options(
+    table.font.size = gt::px(9),
+    table.width = gt::pct(100)
+  )
 
+# Save the table
+gt::gtsave(
+  data = table1_formatted,
+  filename = here::here("week_4", "outputs", "tables",
+                          paste0("table_1_", data_version, ".html"))
+  )
 
+table1_formatted
+```
 
+```{r}
+# target_var <- params$target_var
+target_var <- "avg_order_value_gbp"
 
+boxplot_p <- ggplot(df_clean, aes(x = .data[[group_var]],
+                                  y = .data[[target_var]],
+                                  fill = .data[[group_var]])) +
+  geom_boxplot(alpha = 0.7) +
+  theme_minimal() +
+  labs(
+    title = paste("Distribution of", dynamic_labels[[target_var]], "by",
+                  dynamic_labels[[group_var]]),
+    subtitle = paste("Dataset Version:", data_version),
+    x = dynamic_labels[[group_var]],
+    y = dynamic_labels[[target_var]],
+    fill = dynamic_labels[[group_var]]
+  ) +
+  theme(legend.position = "none")
 
+boxplot_p
+
+ggsave(here::here("week_4", "outputs", "figures",
+                  paste0("boxplot_", data_version, ".png")), boxplot_p)
+```
+
+```{r}
+hist_var <- "web_sessions_last_30d"
+dynamic_bins <- ceiling(sqrt(nrow(df_clean)))
+
+histogram_p <- ggplot(df_clean, aes(x = .data[[hist_var]])) +
+  geom_histogram(
+    fill = "steelblue",
+    color = "white",
+    bins = dynamic_bins
+  ) +
+  theme_minimal() +
+  labs(
+    title = paste("Frequency Distribution of", dynamic_labels[[hist_var]]),
+    subtitle = paste0("Dataset: ", data_version, 
+                      " (Bins calculated via Square-root rule: ",
+                      dynamic_bins, ")"),
+    x = dynamic_labels[[hist_var]],
+    y = "Frequency"
+  )
+
+histogram_p
+
+ggsave(here::here("week_4", "outputs", "figures", 
+                  paste0("histogram_",data_version, ".png")), histogram_p)
+```
