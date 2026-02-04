@@ -3,9 +3,10 @@ title: 'Week 4: Activity 1'
 author: "Calum Smith"
 date: "2026-02-02"
 output: html_document
-#params:
-  #data_version: "updated"
-  #group_var: "group"
+params:
+  data_version: "updated"
+  group_var: "group"
+  target_var: "avg_order_value_gbp"
 ---
 
 ```{r, warning = FALSE, message = FALSE, include=FALSE}
@@ -21,30 +22,32 @@ library(janitor)
 library(here)
 library(readr)
 library(tidyverse)
+library(smd)
 ```
 
 # Introduction
-This report provides an initial, plain-language assessment of whether your dataset supports a clear and defensible message that could be communicated to a general audience. At this stage we focus on describing what the data show and how confident we can be in that description, rather than applying complex models. In particular, we (i) summarise who is in the dataset, (ii) compare the two groups on the information available, and (iii) highlight any issues that could make a public-facing narrative misleading without further checks.
+This report presents an initial descriptive analysis to assess whether the dataset supports a clear and defensible narrative relevant to the client’s stated objective. The emphasis at this stage is on establishing a transparent evidential basis for subsequent analysis, rather than pursuing complex modelling. Specifically, the report aims to (i) characterise the sample, (ii) assess baseline comparability between groups on observed covariates, and (iii) identify issues that may affect interpretability, including limitations in measurement or coverage.
 
 # Client Brief
-You asked us to assess whether the dataset supports a clear message that you can stand behind publicly. In practical terms, you want to know whether the pattern is relevant to your decisions, consistent enough to tell a clear story, and not easily explained by straightforward problems such as the two groups being very different people, missing information, or changes in how the outcome was defined or recorded.
+The client has requested an assessment of whether the dataset contains a pattern that is relevant to decision-making, sufficiently consistent to justify communication to a broad audience, and not readily explained by straightforward artefacts (for example, changes in who is included, missingness, or definitional changes). The required output is an evidence-led summary with an explicit claim, supporting evidence, limitations with impact, and a concrete recommendation for next steps.
 
 # Data Description
-
+The dataset contains 238 customers split into two groups: Control (n=120) and Treatment (n=118). For each customer, the dataset includes customer age, customer type, average order value in GBP, number of orders placed in the past 90 days, 
+number of website sessions in the last 30 days prior to the extract date, whether the customer is eligible for a discount under the intervention rules,  area-level affluence score associated with the customer’s location and whether the customer made at least one purchase in the 30 days after the intervention/extract reference point. The operational meaning of the outcome is assumed to be consistent across records but should be verified against the source system definition.
 
 # Baseline summary of data characteristics
+We summarise baseline characteristics by group to assess whether the groups appear comparable on observed covariates. For continuous variables we report means and standard deviations (and median and IQR for deprivation score), and for categorical variables we report counts and percentages. For the expert audience we additionally report standardised mean differences (SMDs) to quantify imbalance; these provide a scale-free measure of the magnitude of observed differences.
 
 # Claim
+The dataset supports a valid comparison between groups with no evidence of sampling bias; however, the marginal increase in Average Order Value for the Treatment group is heavily obscured by high customer variability, requiring statistical validation before confirming success.
 
-# Data and approach(plain language)
+# Data and approach (plain language)
+The analysis is descriptive. We do not fit outcome models or claim causal effects. We use the baseline summary table to characterise the sample and check for obvious differences in group composition, then use two simple visuals: (i) a plot of the customer type across the groups; and (ii) a plot of Average Order Value (£) distributions by group as an example check to illustrate the skewnness of the data.
 
-# Evidence
 
-
-```{r}
+```{r, warning = FALSE, message = FALSE}
 # create file path to data selected
-#data_version <- params$data_version
-data_version <-  "updated"
+data_version <- params$data_version
 
 data_path <- here("week_4", "data", "raw", paste0("week4_dataset_",
                                                   data_version, ".csv"))
@@ -74,14 +77,14 @@ df <- load_dynamic_data(data_path)
 
 ```
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 # Next we need to clean the data across the three sources
 df_clean <- df %>%
   mutate(across(where(is.character), as.factor)) %>%  # Ensure strings are factors
   janitor::clean_names()
 ```
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 # A function to turn "tenure_months" into "Tenure Months"
 correct_labels <- function(x) {
   x %>%
@@ -99,10 +102,10 @@ dynamic_labels <- setNames(
 )
 ```
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 # Column variables
-#group_var <- params$group_var
-group_var <- "group"
+group_var <- params$group_var
+
 
 # Building the table 1
 table1 <- df_clean %>%
@@ -116,7 +119,7 @@ table1 <- df_clean %>%
     by = all_of(group_var),
     label = dynamic_labels,
     statistic = list(
-      all_continuous() ~ "{median} ({p25}, {p75})",
+      all_continuous() ~ "{mean} ({sd})",
       all_categorical() ~ "{n} ({p}%)"
     ),
     missing = "ifany",
@@ -125,11 +128,21 @@ table1 <- df_clean %>%
   ) %>%
   add_overall(last = FALSE) %>%
   add_n() %>%
+  add_difference(
+    test = everything() ~ "smd",
+    estimate_fun = everything() ~ function(x) style_sigfig(x, digits=3)
+  )%>%
   add_stat_label(location = "row") %>%
-  modify_header(label ~ "**Variable**") %>%
+  modify_header(label ~ "**Variable**",
+                estimate = "**SMD**") %>%
+  modify_column_hide(columns = c("conf.low", "conf.high")) %>%
   modify_caption(paste("**Table 1. Characteristics by", 
                        tools::toTitleCase(group_var), 
                        "(Data Version:", data_version, ")**"))
+
+# Remove CI abbreviation
+table1$table_styling$abbreviation <- table1$table_styling$abbreviation %>%
+  filter(!grepl("CI|Confidence Interval", abbreviation))
 
 # Output the Table 1
 table1_formatted <- table1 %>% 
@@ -149,9 +162,32 @@ gt::gtsave(
 table1_formatted
 ```
 
+
+# Evidence
+
+## Baseline summary table & Interpretation
+The baseline summary table reports key covariates by group. For this expert version we include standardised mean differences (SMDs) to quantify baseline imbalance.
+
+**Interpretation**: The SMD's are almost all <0.1 with only Customer Type reaching 0.152. Recorded covariates exhibit negligible to small between-group differences overall; balance is assessed on observed variables only and does not address unmeasured determinants.
+
+# Visualisation 1 & Interpretation
+
 ```{r}
-# target_var <- params$target_var
-target_var <- "avg_order_value_gbp"
+ggplot(df_clean, aes(x=customer_type, fill=group)) +
+  geom_bar(position="dodge") +
+  labs(title = "Customer Types by Group", x = "Type") +
+  theme_minimal()
+```
+
+Visualisation 1: Count of Existing and New customers per group.
+
+**Interpretation**: Both groups exhibit similar counts of both Existing and New customers.
+
+# Visualisation 2 & Interpretation
+
+Visualisation 2 compares the Average Order Value (£) distributions by group.
+```{r, warning = FALSE, message = FALSE}
+target_var <- params$target_var
 
 boxplot_p <- ggplot(df_clean, aes(x = .data[[group_var]],
                                   y = .data[[target_var]],
@@ -174,28 +210,13 @@ ggsave(here::here("week_4", "outputs", "figures",
                   paste0("boxplot_", data_version, ".png")), boxplot_p)
 ```
 
-```{r}
-hist_var <- "web_sessions_last_30d"
-dynamic_bins <- ceiling(sqrt(nrow(df_clean)))
+Visualisation 2: Average Order Value (£) by Group.
 
-histogram_p <- ggplot(df_clean, aes(x = .data[[hist_var]])) +
-  geom_histogram(
-    fill = "steelblue",
-    color = "white",
-    bins = dynamic_bins
-  ) +
-  theme_minimal() +
-  labs(
-    title = paste("Frequency Distribution of", dynamic_labels[[hist_var]]),
-    subtitle = paste0("Dataset: ", data_version, 
-                      " (Bins calculated via Square-root rule: ",
-                      dynamic_bins, ")"),
-    x = dynamic_labels[[hist_var]],
-    y = "Frequency"
-  )
+**Interpretation**: Average Order Value (£) distributions significantly overlap across the groups however, both contain outliers indicating the data for each group is right-skewed. 
 
-histogram_p
+# Uncertainty & Limitations
+* Influence of Outliers: The AOV distribution is right-skewed with significant outliers. These extreme values can disproportionately pull the mean, potentially masking the typical customer behavior represented by the median.
+* Ambiguity in Assignment Rules: The specific logic used to assign customers to "Treatment" or "Control" groups is currently undocumented; if this allocation was based on any non-random criteria, the observed differences in outcomes may be driven by selection bias rather than the intervention itself.
 
-ggsave(here::here("week_4", "outputs", "figures", 
-                  paste0("histogram_",data_version, ".png")), histogram_p)
-```
+# Recommendation & Next Steps
+Sensitivity analysis on outliers to ensure the findings are robust and not driven by the top 1% of spenders. If definitions are stable, proceed to an adjusted analysis aligned to the client decision context before communicating a public-facing narrative.
