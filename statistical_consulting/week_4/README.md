@@ -1,4 +1,4 @@
-# Week 4 Activity 1: Descriptive Analysis Report
+# Week 4: Descriptive Analysis Report
 
 ## 1. Project Summary
 This project performs an initial descriptive analysis on a customer dataset to assess baseline comparability between Control and Treatment groups. It automates data loading (with dynamic separator detection), generates a demographic summary table including Standardised Mean Differences (SMDs), and produces visualisations to check for outliers in Average Order Value (AOV). The goal is to determine if the dataset supports a defensible narrative for decision-making.
@@ -94,6 +94,6 @@ Upon successful execution, the following files will be generated in week_4/outpu
     * figures/boxplot_original.png: A box-plot of Average Order Value by Group to visualise skewness and outliers.
 
 ## 6. Assumptions and Limitations
-**Assumptions**: The script assumes that if `data_version` is set to "original", the file is named `week4_dataset.csv`. For any other version (e.g., "updated"), it assumes the filename format week4_dataset_{version}.csv.
+**Assumptions**: The script assumes that if `data_version` is set to "original", the file is named `week4_dataset.csv`. For any other version (e.g., "updated"), it assumes the filename format `week4_dataset_{version}.csv`.
 
 **Limitations**: The analysis is purely descriptive. While SMDs are used to check for balance, they only assess observed covariates and cannot account for unmeasured confounding variables. The presence of outliers in AOV suggests that mean-based comparisons may be sensitive to extreme values.
