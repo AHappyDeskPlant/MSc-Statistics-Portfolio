@@ -42,16 +42,22 @@ We summarise baseline characteristics by group to assess whether the groups appe
 The dataset supports a valid comparison between groups with no evidence of sampling bias; however, the marginal increase in Average Order Value for the Treatment group is heavily obscured by high customer variability, requiring statistical validation before confirming success.
 
 # Data and approach (plain language)
-The analysis is descriptive. We do not fit outcome models or claim causal effects. We use the baseline summary table to characterise the sample and check for obvious differences in group composition, then use two simple visuals: (i) a plot of the customer type across the groups; and (ii) a plot of Average Order Value (£) distributions by group as an example check to illustrate the skewnness of the data.
+The analysis is descriptive. We do not fit outcome models or claim causal effects. We use the baseline summary table to characterise the sample and check for obvious differences in group composition, then use two simple visuals: (i) a plot of the customer type across the groups; and (ii) a plot of Average Order Value (£) distributions by group as an example check to illustrate the skewness of the data.
 
 
 ```{r, warning = FALSE, message = FALSE}
-# create file path to data selected
-data_version <- params$data_version
+# create file suffix to map to the correct file
+file_suffix <- if (params$data_version == "original") {
+  "" 
+} else {
+  paste0("_", params$data_version)
+}
 
-data_path <- here("week_4", "data", "raw", paste0("week4_dataset_",
-                                                  data_version, ".csv"))
+# choose the file based on the suffix
+data_path <- here("week_4", "data", "raw", paste0("week4_dataset",
+                                                  file_suffix, ".csv"))
 
+# bespoke data loader to manage different separators in the csv
 load_dynamic_data <- function(file_path) {
   
   # Read the first line
@@ -73,6 +79,7 @@ load_dynamic_data <- function(file_path) {
   return(df)
 }
 
+# create a data frame
 df <- load_dynamic_data(data_path)
 
 ```
@@ -138,7 +145,7 @@ table1 <- df_clean %>%
   modify_column_hide(columns = c("conf.low", "conf.high")) %>%
   modify_caption(paste("**Table 1. Characteristics by", 
                        tools::toTitleCase(group_var), 
-                       "(Data Version:", data_version, ")**"))
+                       "(Data Version:", params$data_version, ")**"))
 
 # Remove CI abbreviation
 table1$table_styling$abbreviation <- table1$table_styling$abbreviation %>%
@@ -156,7 +163,7 @@ table1_formatted <- table1 %>%
 gt::gtsave(
   data = table1_formatted,
   filename = here::here("week_4", "outputs", "tables",
-                          paste0("table_1_", data_version, ".html"))
+                          paste0("table_1_", params$data_version, ".html"))
   )
 
 table1_formatted
@@ -168,14 +175,15 @@ table1_formatted
 ## Baseline summary table & Interpretation
 The baseline summary table reports key covariates by group. For this expert version we include standardised mean differences (SMDs) to quantify baseline imbalance.
 
-**Interpretation**: The SMD's are almost all <0.1 with only Customer Type reaching 0.152. Recorded covariates exhibit negligible to small between-group differences overall; balance is assessed on observed variables only and does not address unmeasured determinants.
+**Interpretation**: The SMDs are almost all <0.1 with only Customer Type reaching 0.152. Recorded covariates exhibit negligible to small between-group differences overall; balance is assessed on observed variables only and does not address unmeasured determinants.
 
 # Visualisation 1 & Interpretation
 
 ```{r}
 ggplot(df_clean, aes(x=customer_type, fill=group)) +
   geom_bar(position="dodge") +
-  labs(title = "Customer Types by Group", x = "Type") +
+  labs(title = "Customer Types by Group", x = "Type",
+       subtitle = paste("Dataset Version:", params$data_version)) +
   theme_minimal()
 ```
 
@@ -197,7 +205,7 @@ boxplot_p <- ggplot(df_clean, aes(x = .data[[group_var]],
   labs(
     title = paste("Distribution of", dynamic_labels[[target_var]], "by",
                   dynamic_labels[[group_var]]),
-    subtitle = paste("Dataset Version:", data_version),
+    subtitle = paste("Dataset Version:", params$data_version),
     x = dynamic_labels[[group_var]],
     y = dynamic_labels[[target_var]],
     fill = dynamic_labels[[group_var]]
@@ -207,7 +215,7 @@ boxplot_p <- ggplot(df_clean, aes(x = .data[[group_var]],
 boxplot_p
 
 ggsave(here::here("week_4", "outputs", "figures",
-                  paste0("boxplot_", data_version, ".png")), boxplot_p)
+                  paste0("boxplot_", params$data_version, ".png")), boxplot_p)
 ```
 
 Visualisation 2: Average Order Value (£) by Group.
