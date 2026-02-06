@@ -73,12 +73,12 @@ params:
 
 ```r
 # Example: Render the report using the Original Dataset
-rmarkdown::render("week_4/week_4_activity.Rmd", 
+rmarkdown::render("week_4/reports/week_4_activity.Rmd", 
                   params = list(data_version = "original"))
 ```
 ```r
 # Example: Render the report using the Updated Dataset
-rmarkdown::render("week_4/week_4_activity.Rmd", 
+rmarkdown::render("week_4/reports/week_4_activity.Rmd", 
                   params = list(data_version = "updated"))
 ```
 
